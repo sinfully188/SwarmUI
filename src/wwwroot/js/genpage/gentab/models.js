@@ -467,7 +467,7 @@ class ModelBrowserWrapper {
         this.modelDescribeCallbacks = [];
     }
 
-    sortModelLocal(a, b, files) {
+    sortModelLocal(a, b, inputOrder) {
         if (this.subType != 'Stable-Diffusion') {
             let aCorrect = isModelArchCorrect(a);
             let bCorrect = isModelArchCorrect(b);
@@ -500,8 +500,8 @@ class ModelBrowserWrapper {
         if (!aName.endsWith('.engine') && bName.endsWith('.engine')) {
             return 1;
         }
-        let aIndex = files.indexOf(a);
-        let bIndex = files.indexOf(b);
+        let aIndex = inputOrder.get(a.name) ?? 0;
+        let bIndex = inputOrder.get(b.name) ?? 0;
         return aIndex - bIndex;
     }
 
@@ -539,7 +539,9 @@ class ModelBrowserWrapper {
         }
         let prefix = path == '' ? '' : (path.endsWith('/') ? path : `${path}/`);
         genericRequest('ListModels', {'path': path, 'depth': Math.round(depth), 'subtype': this.subType, 'sortBy': sortBy, 'sortReverse': reverse}, data => {
-            let files = data.files.sort((a,b) => this.sortModelLocal(a, b, data.files)).map(f => { return { 'name': f.name, 'data': f }; });
+            let sourceFiles = data.files;
+            let inputOrder = new Map(sourceFiles.map((f, i) => [f.name, i]));
+            let files = sourceFiles.slice().sort((a, b) => this.sortModelLocal(a, b, inputOrder)).map(f => { return { 'name': f.name, 'data': f }; });
             for (let file of files) {
                 file.data.display = cleanModelName(file.data.name.substring(prefix.length));
                 this.models[file.name] = file;

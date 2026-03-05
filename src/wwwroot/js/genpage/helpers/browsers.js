@@ -106,7 +106,27 @@ class GenPageBrowserClass {
         this.lastListCache = null;
         this.runAfterUpdate = [];
         this.refreshHandler = (callback) => callback();
+        // Optional pluggable search provider hook. If unset, the built-in list function is used.
+        this.searchProvider = null;
+        // Small debounce to avoid hammering list calls during rapid UI updates.
+        this.searchDebounceMs = 120;
+        this.pendingSearchTimeout = null;
+        this.pendingSearchToken = 0;
         this.checkIsSmall();
+    }
+
+    /**
+     * Registers a custom search provider.
+     * Provider signature: (request, onComplete, onError) => handled:boolean|void
+     * If it returns false (or throws), the built-in list implementation is used.
+     */
+    setSearchProvider(provider) {
+        this.searchProvider = provider;
+    }
+
+    /** Sets debounce delay for search/list requests. */
+    setSearchDebounceMs(ms) {
+        this.searchDebounceMs = Math.max(0, Math.round(ms || 0));
     }
 
     /**
@@ -242,7 +262,69 @@ class GenPageBrowserClass {
             parseContent(this.lastListCache.folders, this.lastListCache.files);
             return;
         }
-        this.listFoldersAndFiles(folder, isRefresh, parseContent, this.depth);
+        const requestToken = ++this.pendingSearchToken;
+        if (this.pendingSearchTimeout) {
+            clearTimeout(this.pendingSearchTimeout);
+            this.pendingSearchTimeout = null;
+        }
+        let parseContentGuarded = (folders, files) => {
+            if (requestToken !== this.pendingSearchToken) {
+                return;
+            }
+            parseContent(folders, files);
+        };
+        let runDefault = () => {
+            this.listFoldersAndFiles(folder, isRefresh, parseContentGuarded, this.depth);
+        };
+        let runSearch = () => {
+            let provider = this.searchProvider || window.SwarmUIBrowserSearchProvider;
+            if (!provider) {
+                runDefault();
+                return;
+            }
+            let completed = false;
+            let onComplete = (folders, files) => {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                parseContentGuarded(folders, files);
+            };
+            let onError = (error) => {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                console.warn(`[Browser ${this.id}] search provider failed, using default listing:`, error);
+                runDefault();
+            };
+            try {
+                let handled = provider({
+                    browser: this,
+                    browserId: this.id,
+                    folder,
+                    isRefresh,
+                    depth: this.depth,
+                    requestToken,
+                    defaultSearch: () => runDefault()
+                }, onComplete, onError);
+                if (handled === false) {
+                    runDefault();
+                }
+            }
+            catch (error) {
+                onError(error);
+            }
+        };
+        if (this.searchDebounceMs <= 0) {
+            runSearch();
+        }
+        else {
+            this.pendingSearchTimeout = setTimeout(() => {
+                this.pendingSearchTimeout = null;
+                runSearch();
+            }, this.searchDebounceMs);
+        }
     }
 
     /**
