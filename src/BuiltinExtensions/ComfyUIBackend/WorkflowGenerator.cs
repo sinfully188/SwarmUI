@@ -770,7 +770,10 @@ public partial class WorkflowGenerator
                 pos = [ltxvcond, 0];
                 neg = [ltxvcond, 1];
             }
-            defscheduler ??= "ltxv";
+            if (IsLTXV())
+            {
+                defscheduler ??= "ltxv";
+            }
         }
         else if (IsNvidiaCosmos1())
         {
@@ -1507,7 +1510,7 @@ public partial class WorkflowGenerator
                     string preproc = g.CreateNode("LTXVPreprocess", new JObject()
                     {
                         ["image"] = origSrcImg.Path,
-                        ["img_compression"] = 32
+                        ["img_compression"] = 18
                     });
                     string latentOutNode = g.CreateNode("LTXVImgToVideoInplace", new JObject()
                     {
@@ -1530,7 +1533,7 @@ public partial class WorkflowGenerator
                 NegCond = [ltxvcond, 1];
                 HadSpecialCond = true;
                 DefaultSampler = "euler";
-                DefaultScheduler = "ltxv-image";
+                DefaultScheduler = "normal";
             }
             else if (VideoModel.ModelClass?.CompatClass?.ID == "nvidia-cosmos-1")
             {
