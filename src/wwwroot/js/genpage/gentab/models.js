@@ -55,12 +55,14 @@ class ModelsHelpers {
         this.compatClasses = {};
         this.modelClasses = {};
         this.models = {};
+        this.loadedSubTypes = new Set();
     }
 
     /** Loads the model classes and models from the server data (ListT2IParams). */
     loadClassesFromServer(modelsMap, compatClasses, modelClasses) {
         this.compatClasses = {};
         this.modelClasses = {};
+        this.loadedSubTypes = new Set(Object.keys(modelsMap));
         for (let compatClass of Object.values(compatClasses)) {
             this.compatClasses[compatClass.id] = new ModelCompatClass(compatClass);
         }
@@ -89,6 +91,11 @@ class ModelsHelpers {
             this.currentModelSelectorElem.appendChild(option);
         }
         this.currentModelSelectorElem.value = selectorVal;
+    }
+
+    /** Returns whether model data for a sub-type has been loaded from ListT2IParams. */
+    hasLoadedSubType(subType) {
+        return this.loadedSubTypes.has(subType);
     }
 
     /** Returns the model data for the given model sub-type and model name, or null if not found. */
@@ -465,6 +472,7 @@ class ModelBrowserWrapper {
             refreshParameterValues(true, subType == 'Wildcards' ? 'wildcards' : null, callback);
         };
         this.modelDescribeCallbacks = [];
+        this.hasLoadedList = false;
     }
 
     sortModelLocal(a, b, inputOrder) {
@@ -542,6 +550,7 @@ class ModelBrowserWrapper {
             let sourceFiles = data.files;
             let inputOrder = new Map(sourceFiles.map((f, i) => [f.name, i]));
             let files = sourceFiles.slice().sort((a, b) => this.sortModelLocal(a, b, inputOrder)).map(f => { return { 'name': f.name, 'data': f }; });
+            this.hasLoadedList = true;
             for (let file of files) {
                 file.data.display = cleanModelName(file.data.name.substring(prefix.length));
                 this.models[file.name] = file;
@@ -587,6 +596,10 @@ class ModelBrowserWrapper {
             callback(data.folders.sort((a, b) => a.localeCompare(b)), files);
             if (fix) {
                 fix();
+            }
+            if (this.subType == 'LoRA' && window.loraHelper?.refreshModelAvailability) {
+                loraHelper.refreshModelAvailability();
+                this.rebuildSelectedClasses();
             }
         }, 0, e => {
             showError(`Failed to list models: ${e}`);

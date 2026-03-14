@@ -633,6 +633,23 @@ body {
     border-radius: 1rem;
     border-right: none;
 }
+.lora-entry-missing {
+    border-color: var(--bs-warning-border-subtle, var(--light-border));
+    background-color: color-mix(in srgb, transparent 80%, var(--bs-warning-bg-subtle, var(--background-soft)));
+}
+.lora-name-missing,
+.lora-missing-status {
+    color: var(--bs-danger-text-emphasis, var(--red));
+}
+.lora-missing-status {
+    margin-left: 0.35rem;
+    font-size: 90%;
+    font-weight: 600;
+}
+.lora-chip-actions {
+    display: none;
+    margin-left: 0.35rem;
+}
 .lora-weight-input {
     width: 3rem;
 }

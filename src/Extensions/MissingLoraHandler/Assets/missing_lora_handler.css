@@ -1,0 +1,12 @@
+.lora-missing-fix-button {
+    padding: 0 0.45rem;
+    border-radius: 0.6rem;
+    border-color: var(--bs-warning-border-subtle, var(--light-border));
+    background-color: var(--bs-warning-bg-subtle, var(--background-soft));
+    color: var(--bs-warning-text-emphasis, var(--text));
+    font-size: 85%;
+}
+
+.lora-missing-fix-button:hover {
+    background-color: color-mix(in srgb, var(--bs-warning-bg-subtle, var(--background-soft)) 80%, var(--emphasis));
+}

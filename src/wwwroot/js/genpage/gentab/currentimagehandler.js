@@ -518,22 +518,41 @@ function copy_current_image_params() {
     if ('loras' in metadata && 'loraweights' in metadata && document.getElementById('input_loras') && metadata.loras.length == metadata.loraweights.length) {
         let loraElem = getRequiredElementById('input_loras');
         for (let val of metadata.loras) {
-            if (val && !$(loraElem).find(`option[value="${val}"]`).length) {
+            if (!val) {
+                continue;
+            }
+            if (loraHelper?.ensureLoraOption) {
+                loraHelper.ensureLoraOption(val, !loraHelper.getModelData(val));
+            }
+            else if (!$(loraElem).find(`option[value="${val}"]`).length) {
                 $(loraElem).append(new Option(val, val, false, false));
             }
         }
         let valSet = [...loraElem.options].map(option => option.value);
         let newLoras = [];
         let newWeights = [];
+        let newConfinements = [];
+        let loraEntries = metadata.loras.map((name, index) => {
+            return {
+                name: name,
+                weight: metadata.loraweights[index],
+                confinement: metadata.lorasectionconfinement?.[index] ?? 0
+            };
+        });
         for (let val of valSet) {
-            let index = metadata.loras.indexOf(val);
+            let index = loraEntries.findIndex(entry => entry.name == val);
             if (index != -1) {
-                newLoras.push(metadata.loras[index]);
-                newWeights.push(metadata.loraweights[index]);
+                let entry = loraEntries.splice(index, 1)[0];
+                newLoras.push(entry.name);
+                newWeights.push(entry.weight);
+                newConfinements.push(entry.confinement);
             }
         }
         metadata.loras = newLoras;
         metadata.loraweights = newWeights;
+        if ('lorasectionconfinement' in metadata) {
+            metadata.lorasectionconfinement = newConfinements;
+        }
     }
     if (!('aspectratio' in metadata) && 'width' in metadata && 'height' in metadata) {
         metadata.aspectratio = 'Custom';
