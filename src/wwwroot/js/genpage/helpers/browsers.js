@@ -538,6 +538,7 @@ class GenPageBrowserClass {
             img.addEventListener('click', () => {
                 this.select(file, div);
             });
+            img.classList.add('image-block-img-inner');
             div.appendChild(img);
             if (this.format.includes('Cards')) {
                 div.className += ' model-block model-block-hoverable';
