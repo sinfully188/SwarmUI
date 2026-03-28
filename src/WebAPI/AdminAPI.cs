@@ -580,10 +580,25 @@ public static class AdminAPI
         return new JObject() { ["users"] = list };
     }
 
-    public static async Task<JObject> GetUpdatesDataFor(string folder, bool nullOnNone)
+    public static async Task<JObject> GetUpdatesDataFor(string folder, bool nullOnNone, bool tryPatches = true)
     {
-        await Utilities.RunGitProcess("fetch", folder);
-        string[] commits = (await Utilities.RunGitProcess("rev-list HEAD..origin", folder)).Trim().Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        string fetchResult = await Utilities.RunGitProcess("fetch", folder);
+        Logs.Debug($"Git fetch of {folder} says: {fetchResult}");
+        string commitRaw = (await Utilities.RunGitProcess("rev-list HEAD..origin", folder)).Trim().Replace("\r", "");
+        string[] commits;
+        if (commitRaw.StartsWith("fatal: "))
+        {
+            Logs.Error($"Git rev-list failed for folder '{folder}' with message: {commitRaw}");
+            if (tryPatches)
+            {
+                string autofixme = await Utilities.RunGitProcess("remote set-head origin --auto", folder);
+                Logs.Debug($"Autofix for git rev-list failure: {autofixme}");
+                return await GetUpdatesDataFor(folder, nullOnNone, false);
+            }
+            commits = ["(unknown revisions, see error in logs. Use Aggressive Update to auto-resolve most issues.)"];
+            return new JObject() { ["count"] = 1, ["preview"] = JArray.FromObject(commits) };
+        }
+        commits = commitRaw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         int updatesCount = commits.Length;
         if (commits.Length > 6)
         {
@@ -694,13 +709,15 @@ public static class AdminAPI
     {
         string priorHash = (await Utilities.RunGitProcess("rev-parse HEAD", folder)).Trim();
         string pullResult = await Utilities.RunGitProcess(aggressive ? "pull --autostash" : "pull", folder);
-        Logs.Verbose($"Git pull of {folder} says: {pullResult}");
+        Logs.Debug($"Git pull of {folder} says: {pullResult}");
         if (aggressive)
         {
             if (pullResult.Contains("There is no tracking information for the current branch") || pullResult.Contains("You are not currently on a branch"))
             {
-                await Utilities.RunGitProcess("checkout master --force", folder);
-                await Utilities.RunGitProcess("branch --set-upstream-to=origin/master master", folder);
+                string checkout = await Utilities.RunGitProcess("checkout master --force", folder);
+                Logs.Debug($"Aggressive checkout: {checkout}");
+                string branch = await Utilities.RunGitProcess("branch --set-upstream-to=origin/master master", folder);
+                Logs.Debug($"Aggressive set-branch: {branch}");
             }
             string fetch = await Utilities.RunGitProcess("fetch", folder);
             Logs.Debug($"Aggressive fetch: {fetch}");
