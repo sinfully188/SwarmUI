@@ -1,4 +1,11 @@
 
+let registeredMediaButtons = [];
+
+/** Registers a media button for extensions. 'mediaTypes' filters by type eg ['audio'], null means all. 'isDefault' promotes to visible (vs More dropdown). 'showInHistory' controls whether button appears in the History panel. */
+function registerMediaButton(name, action, title = '', mediaTypes = null, isDefault = false, showInHistory = true, href = null, is_download = false) {
+    registeredMediaButtons.push({ name, action, title, mediaTypes, isDefault, showInHistory, href, is_download });
+}
+
 function listOutputHistoryFolderAndFiles(path, isRefresh, callback, depth) {
     let sortBy = localStorage.getItem('image_history_sort_by') ?? 'Name';
     let reverse = localStorage.getItem('image_history_sort_reverse') == 'true';
@@ -55,6 +62,7 @@ function listOutputHistoryFolderAndFiles(path, isRefresh, callback, depth) {
 
 function buttonsForImage(fullsrc, src, metadata) {
     let isDataImage = src.startsWith('data:');
+    let mediaType = getMediaType(src);
     buttons = [];
     if (permissions.hasPermission('user_star_images') && !isDataImage) {
         buttons.push({
@@ -138,6 +146,17 @@ function buttonsForImage(fullsrc, src, metadata) {
                 });
             }
         });
+    }
+    for (let reg of registeredMediaButtons) {
+        if (reg.showInHistory && (!reg.mediaTypes || reg.mediaTypes.includes(mediaType))) {
+            buttons.push({
+                label: reg.name,
+                title: reg.title,
+                href: reg.href,
+                is_download: reg.is_download,
+                onclick: () => reg.action(src)
+            });
+        }
     }
     return buttons;
 }
