@@ -709,6 +709,7 @@ function alignImageDataFormat() {
     let curImg = getRequiredElementById('current_image');
     let img = currentImageHelper.getCurrentImage();
     if (!img) {
+        curImg.classList.remove('current_image_sideblock');
         return;
     }
     let curImgContainer = currentImageHelper.getCurrentImageContainer();
@@ -724,6 +725,7 @@ function alignImageDataFormat() {
     curImgContainer.style.maxWidth = `calc(min(100%, ${width}px))`;
     if ((remainingWidth > 30 * 16 && format == 'auto') || format == 'side') {
         curImg.classList.remove('current_image_small');
+        curImg.classList.add('current_image_sideblock');
         extrasWrapper.style.display = 'inline-block';
         extrasWrapper.classList.add('extras-wrapper-sideblock');
         curImgContainer.style.maxHeight = `calc(max(15rem, 100%))`;
@@ -739,6 +741,7 @@ function alignImageDataFormat() {
     }
     else {
         curImg.classList.add('current_image_small');
+        curImg.classList.remove('current_image_sideblock');
         extrasWrapper.style.width = '100%';
         extrasWrapper.style.maxWidth = `100%`;
         extrasWrapper.style.display = 'block';
@@ -939,8 +942,8 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
         }
         return normalized;
     }
-    function includeButton(name, action, extraClass = '', title = '', mediaTypes = null) {
-        buttonDefs[normalizeButtonKey(name)] = { name, action, extraClass, title, mediaTypes };
+    function includeButton(name, action, extraClass = '', title = '', mediaTypes = null, can_multi = false, multi_only = false) {
+        buttonDefs[normalizeButtonKey(name)] = { name, action, extraClass, title, mediaTypes, can_multi, multi_only };
     }
     function includeLinkButton(name, href, isDownload = false, title = '', mediaTypes = null) {
         buttonDefs[normalizeButtonKey(name)] = { name, href, is_download: isDownload, title, mediaTypes };
@@ -970,6 +973,9 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
             }
         }
         for (let def of Object.values(buttonDefs)) {
+            if (def.multi_only) {
+                continue;
+            }
             if (def.mediaTypes && !def.mediaTypes.includes(mediaType)) {
                 continue;
             }
@@ -1153,7 +1159,7 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
             imageHistoryBrowser.navigate(folder);
         }, '', 'Jumps the History browser to where this file is at.');
     }
-    for (let added of buttonsForImage(imagePathClean, src, metadata)) {
+    for (let added of buttonsForImage(imagePathClean, src, metadata, true)) {
         if (added.label == 'Star' || added.label == 'Unstar') {
             continue;
         }
@@ -1163,9 +1169,6 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
         else {
             includeButton(added.label, added.onclick, '', added.title);
         }
-    }
-    for (let reg of registeredMediaButtons) {
-        includeButton(reg.name, () => reg.action(src), '', reg.title, reg.mediaTypes);
     }
     renderButtonsFromDefs();
     quickAppendButton(buttons, 'More &#x2B9F;', (e, button) => {
