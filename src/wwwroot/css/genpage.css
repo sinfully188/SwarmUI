@@ -208,6 +208,10 @@ body {
     object-fit: contain;
     object-position: top left;
 }
+.current_image_sideblock > .current-image-img {
+    position: sticky;
+    top: 0px;
+}
 .current_image_batch {
     display: inline-block;
     overflow-x: hidden;
@@ -1072,6 +1076,9 @@ body {
     border-right: none !important;
     margin-left: 2px;
 }
+.simple-generate-button {
+    width: calc(100% - 40px);
+}
 .alt-prompt-center-button {
     border-radius: 0 !important;
 }
@@ -1092,6 +1099,7 @@ body {
     position: relative;
     background-color: color-mix(in srgb, transparent 80%, var(--background));
     transition: background-color 0.2s ease-out;
+    margin: 0 2px;
 }
 .alt-prompt-image {
     max-height: 128px;
@@ -1127,6 +1135,10 @@ body {
     background-color: color-mix(in srgb, var(--red) 70%, black) !important;
     border: 1px solid black;
     cursor: pointer;
+}
+.alt-prompt-image-container.image-drop-replace-target .alt-prompt-image {
+    outline: 4px solid var(--emphasis);
+    border-radius: 5px;
 }
 .image-clear-button {
     vertical-align: middle;
@@ -1679,7 +1691,7 @@ body {
 }
 .simpleinput-top-section {
     width: 100%;
-    height: calc(100% - 5rem);
+    height: calc(100% - 6rem);
     overflow: auto;
 }
 .simpleinputsidebar .auto-input-prompt-tokencount {
@@ -1690,7 +1702,7 @@ body {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 5rem;
+    height: 6rem;
     padding-top: 1rem;
     border-top: 1px solid var(--light-border);
 }
